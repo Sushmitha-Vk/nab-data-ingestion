@@ -1,0 +1,34 @@
+# Maven
+# Build your Java project and run tests with Apache Maven.
+# Add steps that analyze code, save build artifacts, deploy, and more:
+# https://docs.microsoft.com/azure/devops/pipelines/languages/java
+
+trigger:
+- dev-sush-contentIndex
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- task: Maven@3
+  displayName: 'Generate bulk data'
+  inputs:
+    mavenPomFile: 'pom.xml'
+    mavenOptions: '-Xmx4096m'
+    javaHomeOption: 'JDKVersion'
+    jdkVersionOption: '1.8'
+    jdkArchitectureOption: 'x64'
+    publishJUnitResults: false
+    testResultsFiles: '**/nab-bulk-data/*.json'
+    goals: 'install -DskipTests=true exec:java -Dexec.args="configs/nab-data-preparation.json"'
+
+- task: Bash@3
+  displayName: 'Install python module'
+  inputs:
+    targetType: 'inline'
+    script: 'pip install requests'
+- task: PythonScript@0
+  displayName: 'Submit bulk data'
+  inputs:
+    scriptSource: 'filePath'
+    scriptPath: 'bulk-ingestion.py'
